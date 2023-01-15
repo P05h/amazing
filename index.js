@@ -1,40 +1,21 @@
-import createBareServer from "@tomphttp/bare-server-node";
-import http from "node:http";
-import nodeStatic from "node-static";
+const form = document.querySelector('form');
+const input = document.querySelector('input');
 
-const httpServer = http.createServer();
-const serve = new nodeStatic.Server('static/');
+form.addEventListener('submit', async event => {
+    event.preventDefault();
+    window.navigator.serviceWorker.register('./sw.js', {
+        scope: __uv$config.prefix
+    }).then(() => {
+        let url = input.value.trim();
+        if (!isUrl(url)) url = 'https://www.google.com/search?q=' + url;
+        else if (!(url.startsWith('https://') || url.startsWith('http://'))) url = 'http://' + url;
 
-const bareServer = createBareServer("/", {
-  logErrors: false,
-  localAddress: undefined,
-  maintainer: {
-    email: "tomphttp@sys32.dev",
-    website: "https://github.com/tomphttp/",
-  },
+
+        window.location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
+    });
 });
 
-httpServer.on("request", (req, res) => {
-  if (bareServer.shouldRoute(req)) {
-    bareServer.routeRequest(req, res);
-  } else {
-    res.writeHead(400);
-    res.end("Not found.");
-  }
-});
-
-httpServer.on("upgrade", (req, socket, head) => {
-  if (bareServer.shouldRoute(req)) {
-    bareServer.routeUpgrade(req, socket, head);
-  } else {
-    socket.end();
-  }
-});
-
-httpServer.on("listening", () => {
-  console.log("HTTP server listening");
-});
-
-httpServer.listen({
-  port: process.env.PORT || 6969,
-});
+function isUrl(val = ''){
+    if (/^http(s?):\/\//.test(val) || val.includes('.') && val.substr(0, 1) !== ' ') return true;
+    return false;
+};
